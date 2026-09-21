@@ -1,0 +1,18 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---- editors / OS ----
+.vscode/
+.idea/
+.zcode/
+*.swp
+*~
+.DS_Store
