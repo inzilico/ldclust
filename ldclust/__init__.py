@@ -17,4 +17,4 @@ from .library import (PROTOCOL_P, DISTANCES, load_ld, load_ld_h5, load_ids,
                       parse_assoc_hap, select_blocks, causal_snps,
                       snp_positions, clustering_stats, pairwise_ari)
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

@@ -24,6 +24,13 @@ dependencies = [
     "scikit-learn>=1.3",
 ]
 
+[project.urls]
+Homepage = "https://github.com/inzilico/ldclust"
+Source = "https://github.com/inzilico/ldclust"
+Issues = "https://github.com/inzilico/ldclust/issues"
+Changelog = "https://github.com/inzilico/ldclust/releases"
+Documentation = "https://github.com/inzilico/ldclust#readme"
+
 [project.optional-dependencies]
 # clustering methods with lazy imports in ldclust.library
 hdbscan = ["hdbscan>=0.8"]

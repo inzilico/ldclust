@@ -22,7 +22,7 @@ from scipy.sparse import coo_matrix, csr_matrix, diags
 from scipy.sparse.csgraph import connected_components
 from sklearn.metrics import adjusted_rand_score
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 # Distance transforms: name -> function r2 -> d. d1 = 1 - r2,
 # d2 = sqrt(1 - r2) (Euclidean metric for a PSD r2 matrix),

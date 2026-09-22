@@ -1,0 +1,117 @@
+Metadata-Version: 2.4
+Name: ldclust
+Version: 0.2.1
+Summary: LD-based clustering of SNPs with a haplotype-testing protocol
+Author-email: Gennady Khvorykh <info@inzilico.com>
+Project-URL: Homepage, https://github.com/inzilico/ldclust
+Project-URL: Source, https://github.com/inzilico/ldclust
+Project-URL: Issues, https://github.com/inzilico/ldclust/issues
+Project-URL: Changelog, https://github.com/inzilico/ldclust/releases
+Project-URL: Documentation, https://github.com/inzilico/ldclust#readme
+Keywords: linkage disequilibrium,SNP,clustering,haplotype,bioinformatics
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: h5py
+Requires-Dist: pandas
+Requires-Dist: scikit-learn>=1.3
+Provides-Extra: hdbscan
+Requires-Dist: hdbscan>=0.8; extra == "hdbscan"
+Provides-Extra: graph
+Requires-Dist: networkx>=3; extra == "graph"
+Provides-Extra: igraph
+Requires-Dist: igraph; extra == "igraph"
+Requires-Dist: leidenalg; extra == "igraph"
+Requires-Dist: infomap; extra == "igraph"
+Provides-Extra: all
+Requires-Dist: hdbscan>=0.8; extra == "all"
+Requires-Dist: networkx>=3; extra == "all"
+Requires-Dist: igraph; extra == "all"
+Requires-Dist: leidenalg; extra == "all"
+Requires-Dist: infomap; extra == "all"
+
+# ldclust
+
+LD-based clustering of SNPs with a haplotype-testing protocol: load an
+LD (r²) matrix, define distances or a spectral embedding, cluster SNPs
+into LD blocks, write PLINK `--hap-assoc` hlist files, run the
+haplotype-association endpoint, and select associated blocks.
+
+The package grew out of a benchmark of 25 clustering method families on
+LD matrices (simulated and real chromosome 22); every wrapper returns
+`(labels, probs_or_None, seconds)` and consumes one of four substrates,
+so methods are drop-in comparable.
+
+## Install
+
+```bash
+pip install .                    # core: numpy, scipy, h5py, pandas, scikit-learn
+pip install ".[all]"             # + hdbscan, networkx, igraph, leidenalg, infomap
+```
+
+The SBM family needs [graph-tool](https://graph-tool.skewed.de), which
+is not pip-installable:
+
+```bash
+conda create -n sbm -c conda-forge python=3.10 numpy scipy h5py graph-tool
+conda run -n sbm python -m ldclust.cli --help
+```
+
+## Usage
+
+Command line (one clustering run + benchmark artifacts: blocks csv,
+labels npy, PLINK hlist, `summary.tsv` row):
+
+```bash
+ldclust -p <prefix> --method fof --eps 0.5 --out-dir data/bench
+ldclust -p <prefix> --method hc --deep-split 2 --min-cluster-size 3
+ldclust -p <prefix> --method dpblocks --tag-thr 0.3 --max-len 30
+ldclust --help
+```
+
+`<prefix>` names `prefix.ld.h5` + `prefix.snplist` (an r² matrix with
+SNP ids; pandas-fixed and plain h5py layouts both load); the `gmm` /
+`dpgmm` methods additionally read `<prefix>.gmm.raw` (PLINK `--recodeA`
+dosages) to build the relationship-matrix embedding.
+
+Library:
+
+```python
+import ldclust as ld
+
+ids, r2, layout = ld.load_ld(prefix)          # SNP ids + r2 matrix
+labels, _, sec = ld.cluster_hc(ld.distances(r2, "d1"),
+                               deep_split=2)  # WGCNA-style, dynamic tree cut
+ld.write_hlist("blocks.hlist", ids, labels)   # PLINK --hap input
+assoc = ld.run_hap_assoc(prefix, "blocks.hlist", "run1",
+                         timeout_sec=600)     # PLINK 1.07 --hap-assoc
+selected = ld.select_blocks(ld.parse_assoc_hap(assoc))  # OMNIBUS p <= 5e-6
+```
+
+## Methods (25 families)
+
+| substrate | methods |
+|---|---|
+| precomputed distances (1 − r², √(1 − r²)) | hdbscan, optics, dbscan |
+| spectral embeddings of r² / relationship matrix | soptics, spectral (NJW), gmm, dpgmm, kmeans, minibatch |
+| weighted r² graph | fof (percolation), louvain, leiden, cnm, mcl, lpa, cw (Chinese Whispers), walktrap, infomap, sbm (DC/nested, MDL) |
+| raw r² similarity | ap (affinity propagation), pam (similarity k-medoids), cdhit (CD-HIT-style seed-and-recruit) |
+| hierarchical | hc (average/complete linkage + dynamic tree cut, WGCNA recipe) |
+| ordered SNPs | dpblocks (Zhang et al. 2002 DP, tag-SNP cost) |
+| ensembles | consensus (co-association: DTC on 1 − C or percolation on C) |
+
+Noise label convention: −1 where a method defines it (hdbscan family,
+dynamic tree cut); all other methods assign every SNP. Every wrapper is
+deterministic unless documented (gmm/dpgmm/sbm/minibatch are seeded).
+
+## Development
+
+```bash
+python3 tests/test_smoke.py    # synthetic-matrix smoke tests, no PLINK
+```
+
+Author: Gennady Khvorykh (`info@inzilico.com`).
